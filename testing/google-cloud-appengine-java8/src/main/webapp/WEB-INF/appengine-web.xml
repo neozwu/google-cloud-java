@@ -9,7 +9,9 @@
   <manual-scaling>
     <instances>1</instances>
   </manual-scaling>
+  <url-stream-handler>native</url-stream-handler>
   <system-properties>
+    <property name="gae-test" value="gae-test-167023"/>
     <property name="java.util.logging.config.file" value="WEB-INF/logging.properties"/>
   </system-properties>
 </appengine-web-app>

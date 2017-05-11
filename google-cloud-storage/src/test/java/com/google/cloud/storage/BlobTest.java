@@ -46,12 +46,12 @@ import java.security.Key;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import javax.crypto.spec.SecretKeySpec;
 import org.easymock.Capture;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import java.util.logging.Logger;
 
 public class BlobTest {
 

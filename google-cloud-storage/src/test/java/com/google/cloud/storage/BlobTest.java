@@ -41,19 +41,17 @@ import com.google.cloud.storage.Storage.CopyRequest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
-
-import org.easymock.Capture;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.net.URL;
 import java.security.Key;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.crypto.spec.SecretKeySpec;
+import org.easymock.Capture;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import java.util.logging.Logger;
 
 public class BlobTest {
 
@@ -117,6 +115,7 @@ public class BlobTest {
   private static final String BASE64_KEY = "JVzfVl8NLD9FjedFuStegjRfES5ll5zc59CIXw572OA=";
   private static final Key KEY =
       new SecretKeySpec(BaseEncoding.base64().decode(BASE64_KEY), "AES256");
+  private static final Logger log = Logger.getLogger(BlobTest.class.getName());
 
   private Storage storage;
   private Blob blob;
@@ -340,7 +339,9 @@ public class BlobTest {
     BlobWriteChannel channel = createMock(BlobWriteChannel.class);
     expect(storage.getOptions()).andReturn(mockOptions);
     expect(storage.writer(eq(expectedBlob))).andReturn(channel);
+    log.info("start calling replay");
     replay(storage);
+    log.info("end calling replay");
     initializeBlob();
     assertSame(channel, blob.writer());
   }

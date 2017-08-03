@@ -168,6 +168,7 @@
     <vision.version>0.21.2-beta-SNAPSHOT</vision.version>
     <video-intelligence.version>0.21.2-alpha-SNAPSHOT</video-intelligence.version>
     <testing.version>0.21.2-alpha-SNAPSHOT</testing.version>
+    <okhttp.version>3.8.1</okhttp.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -760,6 +761,12 @@
         <groupId>com.google.api</groupId>
         <artifactId>gax-grpc</artifactId>
         <version>${gax-grpc.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>okhttp</artifactId>
+        <version>${okhttp.version}</version>
       </dependency>
 
       <!-- test deps -->

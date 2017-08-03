@@ -45,8 +45,12 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -381,30 +385,68 @@ public abstract class ServiceOptions<ServiceT extends Service<OptionsT>,
   }
 
   protected static String getAppEngineProjectId() {
-    try {
-      Class<?> factoryClass =
-          Class.forName("com.google.appengine.api.appidentity.AppIdentityServiceFactory");
-      Class<?> serviceClass =
-          Class.forName("com.google.appengine.api.appidentity.AppIdentityService");
-      Method method = factoryClass.getMethod("getAppIdentityService");
-      Object appIdentityService = method.invoke(null);
-      method = serviceClass.getMethod("getServiceAccountName");
-      String serviceAccountName = (String) method.invoke(appIdentityService);
-      int indexOfAtSign = serviceAccountName.indexOf('@');
-      return serviceAccountName.substring(0, indexOfAtSign);
-    } catch (ClassNotFoundException exception) {
-      if (System.getProperty("com.google.appengine.runtime.version") != null) {
-        // Could not resolve appengine classes under GAE environment.
-        throw new RuntimeException("Google App Engine runtime detected "
-            + "(the environment variable \"com.google.appengine.runtime.version\" is set), "
-            + "but unable to resolve appengine-sdk classes. "
-            + "For more details see "
-            + "https://github.com/GoogleCloudPlatform/google-cloud-java/blob/master/APPENGINE.md");
+    if (PlatformInformation.isOnGAEStandard7()) {
+      try {
+        Class<?> factoryClass =
+                Class.forName("com.google.appengine.api.appidentity.AppIdentityServiceFactory");
+        Class<?> serviceClass =
+                Class.forName("com.google.appengine.api.appidentity.AppIdentityService");
+        Method method = factoryClass.getMethod("getAppIdentityService");
+        Object appIdentityService = method.invoke(null);
+        method = serviceClass.getMethod("getServiceAccountName");
+        String serviceAccountName = (String) method.invoke(appIdentityService);
+        int indexOfAtSign = serviceAccountName.indexOf('@');
+        return serviceAccountName.substring(0, indexOfAtSign);
+      } catch (ClassNotFoundException exception) {
+        if (System.getProperty("com.google.appengine.runtime.version") != null) {
+          // Could not resolve appengine classes under GAE environment.
+          throw new RuntimeException("Google App Engine runtime detected "
+                  + "(the environment variable \"com.google.appengine.runtime.version\" is set), "
+                  + "but unable to resolve appengine-sdk classes. "
+                  + "For more details see "
+                  + "https://github.com/GoogleCloudPlatform/google-cloud-java/blob/master/APPENGINE.md");
+        }
+        return null;
+      } catch (Exception ignore) {
+        return null;
       }
-      return null;
-    } catch (Exception ignore) {
-      return null;
+    } else {
+      //for GAE flex and standard Java 8 environment
+      String projectId = System.getenv("GCLOUD_PROJECT");
+      if (projectId == null) {
+        projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+      }
+      if (projectId == null) {
+        try {
+          projectId = getAppEngineProjectIdFromMetadataServer();
+        } catch (IOException ignore) {
+          projectId = null;
+        }
+      }
+      if (projectId == null) {
+        projectId = getAppEngineAppId();
+        if (projectId != null && projectId.contains(":")) {
+            int colonIndex = projectId.indexOf(":");
+            projectId = projectId.substring(colonIndex + 1);
+        }
+      }
+      return projectId;
     }
+  }
+
+  private static String getAppEngineProjectIdFromMetadataServer() throws IOException {
+    String metadata = "http://metadata.google.internal";
+    String projectIdURL = "/computeMetadata/v1/project/project-id";
+    OkHttpClient ok = new OkHttpClient.Builder()
+            .readTimeout(500, TimeUnit.MILLISECONDS)
+            .writeTimeout(500, TimeUnit.MILLISECONDS)
+            .build();
+    Request request = new Request.Builder().url(metadata + projectIdURL)
+            .addHeader("Metadata-Flavor", "Google")
+            .get()
+            .build();
+    Response response = ok.newCall(request).execute();
+    return response.body().string();
   }
 
   protected static String getServiceAccountProjectId() {
